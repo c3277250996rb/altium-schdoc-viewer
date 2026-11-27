@@ -120,7 +120,8 @@
     "publish:all": "scripts/publish.sh",
     "publish:vscode": "scripts/publish.sh --vscode-only",
     "publish:ovsx": "scripts/publish.sh --ovsx-only",
-    "mcp": "node dist/mcp-server.js"
+    "mcp": "node dist/mcp-server.js",
+    "demo": "npm run build && esbuild scripts/demo.ts --bundle --platform=node --format=cjs --outfile=dist/demo.cjs --log-level=warning && node dist/demo.cjs"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

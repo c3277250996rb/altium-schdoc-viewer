@@ -70,6 +70,7 @@ npm test               # typecheck + build + vitest run
 npm run test:watch     # vitest watch
 npm run package        # @vscode/vsce → altium-schdoc-viewer-<version>.vsix
 npm run mcp            # run the MCP server locally (stdio JSON-RPC; Ctrl+D exits)
+npm run demo           # render a .SchDoc into demo-out/index-<theme>.html for browser viewing
 
 # Publishing
 npm run publish:dry    # typecheck + test + package, no publish

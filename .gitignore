@@ -3,6 +3,10 @@ dist
 *.vsix
 .DS_Store
 
+# Standalone demo pages rendered from a real schematic (demo: npm run demo).
+# They embed parsed customer content, so they never belong in this repo.
+demo-out
+
 # Customer / third-party schematic files must never be committed.
 # Contributors with legitimate access may place real fixtures here locally for testing;
 # CI and all public forks run without them (tests skip when absent).

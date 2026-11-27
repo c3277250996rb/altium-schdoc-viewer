@@ -21,6 +21,10 @@
 
 ### Maintenance
 
+- Dev: added `npm run demo` (`scripts/demo.ts`) — renders a local `.SchDoc` into a
+  standalone `demo-out/index-<theme>.html` that loads the webview bundle with the same init
+  payload the extension posts, so the viewer can be inspected in a plain browser without the
+  extension host. Output is gitignored because the page embeds parsed schematic content.
 - Dev toolchain security updates: vitest 1.x -> 4.1 (fixes the critical Vitest UI server
   advisory GHSA-5xrq-8626-4rwp and the transitive vite advisories), esbuild 0.20 -> 0.28
   (GHSA-67mh-4wv8-2f99), plus non-breaking `npm audit fix` lockfile updates.
