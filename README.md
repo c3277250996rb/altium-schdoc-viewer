@@ -11,7 +11,7 @@ Open **Altium Designer** binary `.SchDoc` / `.SchDot` files in VS Code without A
 - **Parameters** — component parameters (including hidden metadata when present)  
 - **Preview** — themed SVG rendering of wires, pins, component bodies, arcs, ellipses, polygons, beziers, rounded rectangles, junctions, net labels and power ports; pan and zoom. Not a pixel-perfect schematic renderer, but close enough to orient yourself on a real board.  
 - **Raw** — truncated record payloads for debugging  
-- **Direct Export** — writes `components.csv`, `pins.csv`, `nets.csv` and `parameters.csv` into a folder named after the schematic (**file name including its extension**, e.g. `local-board.SchDoc/`). The folder sits in the workspace root and is created when missing; the per-tab **Export tab CSV** button still downloads a single CSV.  
+- **Direct Export** — writes `components.csv`, `pins.csv`, `nets.csv` and `parameters.csv` into a folder named `Direct-Export_` + the schematic's **file name including its extension** (e.g. `Direct-Export_local-board.SchDoc/`). The folder sits in the workspace root and is created when missing; the per-tab **Export tab CSV** button still downloads a single CSV.  
 
 ## Install
 

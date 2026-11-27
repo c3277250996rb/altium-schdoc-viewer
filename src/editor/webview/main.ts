@@ -1,4 +1,4 @@
-import { buildDirectExportFiles } from '../../export/directExport';
+import { buildDirectExportFiles, directExportFolderName } from '../../export/directExport';
 import {
   componentTable,
   netConnectionTable,
@@ -81,16 +81,17 @@ async function browserDirectExport(): Promise<string> {
   const p = payload;
   if (!p) return 'No schematic loaded.';
   const files = buildDirectExportFiles(p);
+  const folder = directExportFolderName(p.fileName);
 
   try {
     const res = await fetch(DIRECT_EXPORT_ENDPOINT, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ folder: p.fileName, files }),
+      body: JSON.stringify({ folder, files }),
     });
     if (res.ok) {
       const body = (await res.json()) as { dir?: string };
-      return `Wrote ${files.length} CSV files to ${body.dir ?? `${p.fileName}/`}`;
+      return `Wrote ${files.length} CSV files to ${body.dir ?? `${folder}/`}`;
     }
   } catch {
     // Not served over http (opened from disk) - fall through to the directory picker.
@@ -103,14 +104,14 @@ async function browserDirectExport(): Promise<string> {
   }
   try {
     const rootDir = await picker.call(window);
-    const dir = await rootDir.getDirectoryHandle(p.fileName, { create: true });
+    const dir = await rootDir.getDirectoryHandle(folder, { create: true });
     for (const file of files) {
       const handle = await dir.getFileHandle(file.name, { create: true });
       const writable = await handle.createWritable();
       await writable.write(file.content);
       await writable.close();
     }
-    return `Wrote ${files.length} CSV files to ${p.fileName}/`;
+    return `Wrote ${files.length} CSV files to ${folder}/`;
   } catch (err) {
     if ((err as DOMException | undefined)?.name === 'AbortError') return 'Direct Export cancelled.';
     return `Direct Export failed: ${(err as Error | undefined)?.message ?? String(err)}`;
@@ -272,7 +273,7 @@ function render(): void {
   filterInput.placeholder = 'Filter current tab…';
   toolbar.appendChild(filterInput);
   const directExportBtn = el('button', 'btn', 'Direct Export') as HTMLButtonElement;
-  directExportBtn.title = `Write components, pins, nets and parameters CSV into the ${payload.fileName}/ folder`;
+  directExportBtn.title = `Write components, pins, nets and parameters CSV into the ${directExportFolderName(payload.fileName)}/ folder`;
   const exportStatus = el('span', 'export-status') as HTMLSpanElement;
   exportStatus.setAttribute('role', 'status');
   directExportBtn.onclick = () => {
@@ -287,6 +288,8 @@ function render(): void {
   };
   toolbar.appendChild(directExportBtn);
   const exportCsv = el('button', 'btn', 'Export tab CSV') as HTMLButtonElement;
+  // Hidden on request: the per-tab bindings below stay in place, only the button is not shown.
+  exportCsv.hidden = true;
   toolbar.appendChild(exportCsv);
   toolbar.appendChild(exportStatus);
   root.appendChild(toolbar);
@@ -326,7 +329,8 @@ function render(): void {
     } else if (activeTab === 'pins') {
       const { headers, rows } = pinTable(payload!.pins);
       panel.appendChild(renderTable(headers, rows, f, activeTab, renderPanel));
-      exportCsv.onclick = () => downloadCsv(`${payload!.fileName}-pins.csv`, csvFromTable(headers, rows));
+      exportCsv.onclick = () =>
+        downloadCsv(`${payload!.fileName}-pins.csv`, csvFromTable(headers, rows));
     } else if (activeTab === 'nets') {
       const view = netTable(payload!.nets);
       panel.appendChild(renderTable(view.headers, view.rows, f, activeTab, renderPanel));

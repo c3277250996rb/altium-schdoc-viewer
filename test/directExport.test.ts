@@ -11,9 +11,9 @@ const fixture = path.join(__dirname, 'fixtures', 'local-board.SchDoc');
 const hasFixture = fs.existsSync(fixture);
 
 describe('direct export files', () => {
-  it('names the folder after the schematic, extension included', () => {
-    expect(directExportFolderName('local-board.SchDoc')).toBe('local-board.SchDoc');
-    expect(directExportFolderName('power.SchDot')).toBe('power.SchDot');
+  it('prefixes the folder with "Direct-Export_" and keeps the extension', () => {
+    expect(directExportFolderName('local-board.SchDoc')).toBe('Direct-Export_local-board.SchDoc');
+    expect(directExportFolderName('power.SchDot')).toBe('Direct-Export_power.SchDot');
   });
 
   it('writes components, pins, nets and parameters in a fixed order', () => {

@@ -1,15 +1,15 @@
 node_modules
 dist
-*.vsix
 .DS_Store
 
 # Standalone demo pages rendered from a real schematic (demo: npm run demo).
 # They embed parsed customer content, so they never belong in this repo.
 demo-out
 
-# Direct Export writes into a folder named after the schematic file, e.g. local-board.SchDoc/
+# Direct Export writes into a folder named after the schematic file, e.g. Direct-Export_local-board.SchDoc/
 *.SchDoc/
 *.SchDot/
+Direct-Export_*/
 
 # Customer / third-party schematic files must never be committed.
 # Contributors with legitimate access may place real fixtures here locally for testing;

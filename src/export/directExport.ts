@@ -26,9 +26,12 @@ export interface DirectExportFile {
   content: string;
 }
 
-/** Folder name: the schematic's file name *including* its extension, e.g. `local-board.SchDoc`. */
+/** Folder prefix keeps exports apart from the schematic and makes them obvious in a listing. */
+export const DIRECT_EXPORT_FOLDER_PREFIX = 'Direct-Export_';
+
+/** Folder name: `Direct-Export_` + the schematic's file name *including* its extension. */
 export function directExportFolderName(fileName: string): string {
-  return fileName;
+  return `${DIRECT_EXPORT_FOLDER_PREFIX}${fileName}`;
 }
 
 /** Project the parsed model onto the tab rows, resolving each pin's component designator. */

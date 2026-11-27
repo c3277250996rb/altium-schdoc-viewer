@@ -4,15 +4,15 @@
 
 ### Features
 
-- **Direct Export** button in the viewer toolbar, left of **Export tab CSV**: writes
-  `components.csv`, `pins.csv`, `nets.csv` and `parameters.csv` in one go into a folder named
-  after the schematic file *including* its extension (e.g. `local-board.SchDoc/`) at the
-  workspace root, creating the folder when it does not exist. The CSVs come from the same
-  table definitions as the tabs, so column layout and formula-injection quoting match the
-  per-tab export. The standalone demo page (`npm run demo:serve`) posts to a local endpoint that
-  writes into the project root the same way, so it needs no folder picker; opened straight from
-  disk it falls back to the browser's File System Access directory picker. The toolbar shows the
-  result (files written, cancelled, or the error) so a click never fails silently.
+- **Direct Export** button in the viewer toolbar: writes `components.csv`, `pins.csv`,
+  `nets.csv` and `parameters.csv` in one go into a folder named `Direct-Export_` + the schematic
+  file name *including* its extension (e.g. `Direct-Export_local-board.SchDoc/`) at the workspace
+  root, creating the folder when it does not exist. The CSVs come from the same table definitions
+  as the tabs, so column layout and formula-injection quoting match the per-tab export. The
+  standalone demo page (`npm run demo:serve`) posts to a local endpoint that writes into the
+  project root the same way, so it needs no folder picker; opened straight from disk it falls
+  back to the browser's File System Access directory picker. The toolbar shows the result (files
+  written, cancelled, or the error) so a click never fails silently.
 
 ### Fixes
 
