@@ -155,17 +155,20 @@ Label naming precedence: power-port names (`prio 0`) lose to net-label names (`p
 apply — this matches Altium's display, where an explicit net label overrides a power-net inferred
 name. Unnamed nets get `N$001`, `N$002`, … in assignment order.
 
-The thresholds (`EPS`, `< 12`, `labelSnapMax = 220`) are tuned against the AFE-Eval fixture and real
-Newmatik boards. Tweaking them is legitimate, but re-run `npm test` — the parser test pins exact
+The thresholds (`EPS`, `< 12`, `labelSnapMax = 220`) are tuned against the `local-board.SchDoc`
+fixture and real Newmatik boards. Tweaking them is legitimate, but re-run `npm test` — the parser test pins exact
 component/pin/record counts, and the netlist test requires `maxPins > 1` plus either a recognizable
 power-rail name or a net with ≥ 4 pins, which together catch most regressions.
 
 ## Fixture
 
-`test/fixtures/AFE-Eval_Schematics_B.SchDoc` is a real 822 kB binary SchDoc. The parser test asserts
-**exactly** 3554 records, 67 components, 359 pins, and that a component designated `U1` exists with
-a `LibReference` containing `TMA`. If a refactor changes those numbers, something is wrong — do not
-update the expectations without understanding *why* the count moved.
+`test/fixtures/local-board.SchDoc` is a real 802,304-byte binary SchDoc (gitignored — never commit
+it). The parser test asserts **exactly** 4304 records, 87 components, 823 pins, and that `U1` is
+`16PIN` / value `MT6339N5` / footprint `IDC16` with 24 pins. If a refactor changes those numbers,
+something is wrong — do not update the expectations without understanding *why* the count moved.
+
+The pinned values belong to one specific document; a different board must get its own file name
+and its own test file so each baseline stays tied to a single known input.
 
 ## Custom editor wiring
 

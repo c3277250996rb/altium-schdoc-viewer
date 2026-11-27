@@ -5,7 +5,7 @@ import { parseSchDocBuffer } from '../src/parser/schematic';
 import { bomToCsv } from '../src/export/bomCsv';
 import { compressDesignatorRange } from '../src/export/designators';
 
-const fixture = path.join(__dirname, 'fixtures', 'AFE-Eval_Schematics_B.SchDoc');
+const fixture = path.join(__dirname, 'fixtures', 'local-board.SchDoc');
 const hasFixture = fs.existsSync(fixture);
 
 describe('compressDesignatorRange', () => {

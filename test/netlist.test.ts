@@ -6,7 +6,7 @@ import { buildNetlist } from '../src/netlist/builder';
 import { netlistToProtel } from '../src/export/netlistExport';
 import { buildJsonModel } from '../src/export/jsonModel';
 
-const fixture = path.join(__dirname, 'fixtures', 'AFE-Eval_Schematics_B.SchDoc');
+const fixture = path.join(__dirname, 'fixtures', 'local-board.SchDoc');
 const hasFixture = fs.existsSync(fixture);
 
 describe.skipIf(!hasFixture)('netlist', () => {
