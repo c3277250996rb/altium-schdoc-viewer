@@ -26,7 +26,10 @@ export function csvFromTable(headers: string[], rows: string[][]): string {
 
 /** One CSV row per net connection: net name, `designator-pin`, pin name. */
 export function netConnectionRows(
-  nets: { name: string; pins: { designator: string; pin: string; pinName: string }[] }[]
+  nets: readonly {
+    name: string;
+    pins: readonly { designator: string; pin: string; pinName: string }[];
+  }[]
 ): string[][] {
   const rows: string[][] = [];
   for (const n of nets) {

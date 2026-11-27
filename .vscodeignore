@@ -14,5 +14,12 @@ tsconfig.json
 tsconfig.test.json
 **/*.map
 **/*.ts
-*.vsix
 !dist/**/*.js
+
+# Local only: demo pages and Direct Export folders embed parsed customer schematics.
+demo-out/**
+*.SchDoc/**
+*.SchDot/**
+
+# Dev-only bundle produced by `npm run demo`.
+dist/demo.cjs

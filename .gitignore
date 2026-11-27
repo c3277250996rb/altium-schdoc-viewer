@@ -7,6 +7,10 @@ dist
 # They embed parsed customer content, so they never belong in this repo.
 demo-out
 
+# Direct Export writes into a folder named after the schematic file, e.g. local-board.SchDoc/
+*.SchDoc/
+*.SchDot/
+
 # Customer / third-party schematic files must never be committed.
 # Contributors with legitimate access may place real fixtures here locally for testing;
 # CI and all public forks run without them (tests skip when absent).

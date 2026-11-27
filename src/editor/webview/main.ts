@@ -1,4 +1,13 @@
-import { csvFromTable, netConnectionRows } from './csv';
+import { buildDirectExportFiles } from '../../export/directExport';
+import {
+  componentTable,
+  netConnectionTable,
+  netTable,
+  parameterTable,
+  pinTable,
+  rawRecordTable,
+} from '../../export/tables';
+import { csvFromTable } from './csv';
 import { PREVIEW_SVG_CSS } from './svgPreview';
 import { sanitizeSvgTree } from './svgSanitize';
 import { panViewBox, zoomViewBoxAt, type ViewBox } from './viewport';
@@ -34,6 +43,79 @@ interface InitPayload {
 const root = document.getElementById('root')!;
 
 let payload: InitPayload | null = null;
+
+/** Injected only inside a VS Code webview; the standalone demo page (`npm run demo`) has no host. */
+const vscodeApi = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : null;
+
+function downloadCsv(fileName: string, content: string): void {
+  const blob = new Blob([content], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fileName;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/** Endpoint implemented by `npm run demo:serve`; the page uses it before asking for a folder. */
+const DIRECT_EXPORT_ENDPOINT = '/__direct_export';
+
+/** Minimal File System Access API surface used by the standalone demo page. */
+interface DirectExportDir {
+  getDirectoryHandle(name: string, options?: { create?: boolean }): Promise<DirectExportDir>;
+  getFileHandle(
+    name: string,
+    options?: { create?: boolean }
+  ): Promise<{
+    createWritable(): Promise<{ write(data: string): Promise<void>; close(): Promise<void> }>;
+  }>;
+}
+
+/**
+ * Demo page only. Preferred path: `npm run demo:serve` exposes `POST /__direct_export`, which
+ * writes into the project root exactly like the extension host, so nothing is asked. A page
+ * opened from file:// cannot reach that endpoint and falls back to File System Access, where the
+ * browser forces the user to pick a directory first. Returns a status line for the toolbar, so a
+ * click never ends silently.
+ */
+async function browserDirectExport(): Promise<string> {
+  const p = payload;
+  if (!p) return 'No schematic loaded.';
+  const files = buildDirectExportFiles(p);
+
+  try {
+    const res = await fetch(DIRECT_EXPORT_ENDPOINT, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ folder: p.fileName, files }),
+    });
+    if (res.ok) {
+      const body = (await res.json()) as { dir?: string };
+      return `Wrote ${files.length} CSV files to ${body.dir ?? `${p.fileName}/`}`;
+    }
+  } catch {
+    // Not served over http (opened from disk) - fall through to the directory picker.
+  }
+
+  const picker = (window as unknown as { showDirectoryPicker?: () => Promise<DirectExportDir> })
+    .showDirectoryPicker;
+  if (!picker) {
+    return 'Direct Export needs the VS Code extension host, `npm run demo:serve`, or a Chromium browser.';
+  }
+  try {
+    const rootDir = await picker.call(window);
+    const dir = await rootDir.getDirectoryHandle(p.fileName, { create: true });
+    for (const file of files) {
+      const handle = await dir.getFileHandle(file.name, { create: true });
+      const writable = await handle.createWritable();
+      await writable.write(file.content);
+      await writable.close();
+    }
+    return `Wrote ${files.length} CSV files to ${p.fileName}/`;
+  } catch (err) {
+    if ((err as DOMException | undefined)?.name === 'AbortError') return 'Direct Export cancelled.';
+    return `Direct Export failed: ${(err as Error | undefined)?.message ?? String(err)}`;
+  }
+}
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -189,8 +271,24 @@ function render(): void {
   filterInput.type = 'search';
   filterInput.placeholder = 'Filter current tab…';
   toolbar.appendChild(filterInput);
+  const directExportBtn = el('button', 'btn', 'Direct Export') as HTMLButtonElement;
+  directExportBtn.title = `Write components, pins, nets and parameters CSV into the ${payload.fileName}/ folder`;
+  const exportStatus = el('span', 'export-status') as HTMLSpanElement;
+  exportStatus.setAttribute('role', 'status');
+  directExportBtn.onclick = () => {
+    if (vscodeApi) {
+      vscodeApi.postMessage({ type: 'directExport' });
+      return;
+    }
+    exportStatus.textContent = 'Choose a folder…';
+    void browserDirectExport().then((status) => {
+      exportStatus.textContent = status;
+    });
+  };
+  toolbar.appendChild(directExportBtn);
   const exportCsv = el('button', 'btn', 'Export tab CSV') as HTMLButtonElement;
   toolbar.appendChild(exportCsv);
+  toolbar.appendChild(exportStatus);
   root.appendChild(toolbar);
 
   const tabs = el('div', 'tabs');
@@ -221,75 +319,26 @@ function render(): void {
       sortByTab[activeTab] = { col: 0, dir: 'asc' };
     }
     if (activeTab === 'components') {
-      const headers = ['Designator', 'LibReference', 'Value', 'Footprint', 'IndexInSheet', 'Description'];
-      const rows = payload!.components.map((c) => [
-        c.designator,
-        c.libReference,
-        c.value,
-        c.footprint,
-        String(c.indexInSheet),
-        c.description,
-      ]);
+      const { headers, rows } = componentTable(payload!.components);
       panel.appendChild(renderTable(headers, rows, f, activeTab, renderPanel));
-      (exportCsv as HTMLButtonElement).onclick = () => {
-        const blob = new Blob([csvFromTable(headers, rows)], { type: 'text/csv' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `${payload!.fileName}-components.csv`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-      };
+      exportCsv.onclick = () =>
+        downloadCsv(`${payload!.fileName}-components.csv`, csvFromTable(headers, rows));
     } else if (activeTab === 'pins') {
-      const headers = ['Designator', 'Pin', 'Name', 'Electrical', 'CompIdx'];
-      const rows = payload!.pins.map((p) => [
-        p.designator,
-        p.pinDesignator,
-        p.name,
-        String(p.electrical),
-        String(p.componentRecordIndex),
-      ]);
+      const { headers, rows } = pinTable(payload!.pins);
       panel.appendChild(renderTable(headers, rows, f, activeTab, renderPanel));
-      (exportCsv as HTMLButtonElement).onclick = () => {
-        const blob = new Blob([csvFromTable(headers, rows)], { type: 'text/csv' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `${payload!.fileName}-pins.csv`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-      };
+      exportCsv.onclick = () => downloadCsv(`${payload!.fileName}-pins.csv`, csvFromTable(headers, rows));
     } else if (activeTab === 'nets') {
-      const headers = ['Net', 'Pins'];
-      const rows = payload!.nets.map((n) => [
-        n.name,
-        n.pins.map((p) => `${p.designator}-${p.pin}`).join(', '),
-      ]);
-      panel.appendChild(renderTable(headers, rows, f, activeTab, renderPanel));
-      (exportCsv as HTMLButtonElement).onclick = () => {
-        const csv = csvFromTable(['Net', 'Pin', 'PinName'], netConnectionRows(payload!.nets));
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `${payload!.fileName}-nets.csv`;
-        a.click();
-        URL.revokeObjectURL(a.href);
+      const view = netTable(payload!.nets);
+      panel.appendChild(renderTable(view.headers, view.rows, f, activeTab, renderPanel));
+      exportCsv.onclick = () => {
+        const conn = netConnectionTable(payload!.nets);
+        downloadCsv(`${payload!.fileName}-nets.csv`, csvFromTable(conn.headers, conn.rows));
       };
     } else if (activeTab === 'parameters') {
-      const headers = ['Component', 'Name', 'Value', 'Hidden'];
-      const rows = payload!.parameters.map((p) => [
-        p.component,
-        p.name,
-        p.value,
-        p.hidden ? 'Y' : '',
-      ]);
+      const { headers, rows } = parameterTable(payload!.parameters);
       panel.appendChild(renderTable(headers, rows, f, activeTab, renderPanel));
-      (exportCsv as HTMLButtonElement).onclick = () => {
-        const blob = new Blob([csvFromTable(headers, rows)], { type: 'text/csv' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `${payload!.fileName}-parameters.csv`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-      };
+      exportCsv.onclick = () =>
+        downloadCsv(`${payload!.fileName}-parameters.csv`, csvFromTable(headers, rows));
     } else if (activeTab === 'preview') {
       exportCsv.style.display = 'none';
       const wrap = el('div', 'preview-wrap');
@@ -427,21 +476,9 @@ function render(): void {
       panel.appendChild(wrap);
     } else {
       exportCsv.style.display = '';
-      const headers = ['Index', 'RECORD', 'Preview'];
-      const rows = payload!.rawRecords.map((r) => [
-        String(r.index),
-        r.type === null ? '' : String(r.type),
-        r.preview,
-      ]);
+      const { headers, rows } = rawRecordTable(payload!.rawRecords);
       panel.appendChild(renderTable(headers, rows, f, activeTab, renderPanel));
-      (exportCsv as HTMLButtonElement).onclick = () => {
-        const blob = new Blob([csvFromTable(headers, rows)], { type: 'text/csv' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `${payload!.fileName}-raw.csv`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-      };
+      exportCsv.onclick = () => downloadCsv(`${payload!.fileName}-raw.csv`, csvFromTable(headers, rows));
     }
     if (activeTab !== 'preview') exportCsv.style.display = '';
   }
@@ -520,6 +557,14 @@ style.textContent = `
   .filter:focus {
     outline: 1px solid var(--vscode-focusBorder);
     outline-offset: -1px;
+  }
+  .export-status {
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground);
+    max-width: 360px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .btn {
     padding: 4px 10px;

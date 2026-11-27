@@ -1,9 +1,18 @@
 import * as vscode from 'vscode';
+import {
+  buildDirectExportFiles,
+  directExportFolderName,
+  directExportSource,
+} from '../export/directExport';
 import { buildNetlist, type BuiltNet } from '../netlist/builder';
 import { parseSchDocBuffer, type ParsedSchDoc } from '../parser/schematic';
 import { getWebviewHtml } from './html';
 import { buildSvgPreviewInput } from './previewPayload';
 import { buildSvgPreview } from './webview/svgPreview';
+
+function fileNameOf(uri: vscode.Uri): string {
+  return uri.path.split('/').pop() ?? uri.fsPath.split(/[/\\]/).pop() ?? 'file.SchDoc';
+}
 
 export class SchDocDocument implements vscode.CustomDocument {
   constructor(
@@ -37,7 +46,41 @@ export class SchDocEditorProvider implements vscode.CustomReadonlyEditorProvider
       localResourceRoots: [this.context.extensionUri],
     };
     webviewPanel.webview.html = getWebviewHtml(webviewPanel.webview, this.context.extensionUri);
+    webviewPanel.webview.onDidReceiveMessage((message: unknown) => {
+      if ((message as { type?: string } | undefined)?.type === 'directExport') {
+        void this.directExport(document);
+      }
+    });
     webviewPanel.webview.postMessage({ type: 'init', payload: this.serialize(document) });
+  }
+
+  /**
+   * Direct Export: write components/pins/nets/parameters CSV into `<workspace root>/<fileName>/`,
+   * creating that folder when it does not exist. The folder keeps the schematic's extension
+   * (e.g. `local-board.SchDoc`) so several sheets of one project stay apart.
+   */
+  private async directExport(document: SchDocDocument): Promise<void> {
+    const root =
+      vscode.workspace.getWorkspaceFolder(document.uri)?.uri ??
+      vscode.Uri.joinPath(document.uri, '..');
+    const target = vscode.Uri.joinPath(root, directExportFolderName(fileNameOf(document.uri)));
+    try {
+      await vscode.workspace.fs.createDirectory(target);
+      const files = buildDirectExportFiles(directExportSource(document.model, document.nets));
+      for (const file of files) {
+        await vscode.workspace.fs.writeFile(
+          vscode.Uri.joinPath(target, file.name),
+          new TextEncoder().encode(file.content)
+        );
+      }
+      await vscode.window.showInformationMessage(
+        `Direct Export: wrote ${files.map((f) => f.name).join(', ')} to ${target.fsPath}`
+      );
+    } catch (err) {
+      await vscode.window.showErrorMessage(
+        `Direct Export failed: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
   }
 
   private serialize(document: SchDocDocument) {
@@ -68,10 +111,7 @@ export class SchDocEditorProvider implements vscode.CustomReadonlyEditorProvider
       type: r.recordType,
       preview: r.raw.slice(0, 400),
     }));
-    const fileName =
-      document.uri.path.split('/').pop() ??
-      document.uri.fsPath.split(/[/\\]/).pop() ??
-      'file.SchDoc';
+    const fileName = fileNameOf(document.uri);
     return {
       fileName,
       filePath: document.uri.fsPath,
