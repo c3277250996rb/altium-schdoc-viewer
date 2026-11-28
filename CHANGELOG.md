@@ -4,6 +4,12 @@
 
 ### Features
 
+- **Altium: Export Netlist (ACCEL ASCII .NET)** — saves the netlist in Altium's `ACCEL_ASCII`
+  format (`ACCEL_ASCII "<project>"`, `asciiHeader`, `globalAttrs`, one `compInst` per component
+  with its parameters as `attr` entries, then one `net` block per net with a `node` per pin).
+  Same-named clusters are merged into a single net and repeated pins are written once, because
+  Altium treats a net name as global; components and nets are natural-sorted (`R2` before `R10`).
+
 - **Direct Export** button in the viewer toolbar: writes `components.csv`, `pins.csv`,
   `nets.csv` and `parameters.csv` in one go into a folder named `Direct-Export_` + the schematic
   file name *including* its extension (e.g. `Direct-Export_local-board.SchDoc/`) at the workspace

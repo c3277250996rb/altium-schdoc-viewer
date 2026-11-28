@@ -21,5 +21,9 @@ demo-out/**
 *.SchDoc/**
 *.SchDot/**
 
+# Exported netlists are customer data and are never shipped.
+*.NET
+*.net
+
 # Dev-only bundle produced by `npm run demo`.
 dist/demo.cjs

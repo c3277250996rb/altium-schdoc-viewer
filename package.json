@@ -32,6 +32,7 @@
     "onCustomEditor:altium.schdoc",
     "onCommand:altium.exportBom",
     "onCommand:altium.exportNetlist",
+    "onCommand:altium.exportNetlistAccel",
     "onCommand:altium.exportJsonModel",
     "onCommand:altium.revealRaw",
     "onCommand:altium.mcp.setup",
@@ -65,6 +66,10 @@
         "title": "Altium: Export Netlist (Protel)"
       },
       {
+        "command": "altium.exportNetlistAccel",
+        "title": "Altium: Export Netlist (ACCEL ASCII .NET)"
+      },
+      {
         "command": "altium.exportJsonModel",
         "title": "Altium: Export JSON Model"
       },
@@ -93,6 +98,10 @@
         },
         {
           "command": "altium.exportNetlist",
+          "when": "resourceExtname == .SchDoc || resourceExtname == .SchDot"
+        },
+        {
+          "command": "altium.exportNetlistAccel",
           "when": "resourceExtname == .SchDoc || resourceExtname == .SchDot"
         },
         {

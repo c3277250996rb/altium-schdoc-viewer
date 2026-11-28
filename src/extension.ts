@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { netlistToAccelAscii } from './export/accelAscii';
 import { bomToCsv } from './export/bomCsv';
 import { buildJsonModel } from './export/jsonModel';
 import { netlistToProtel } from './export/netlistExport';
@@ -76,6 +77,32 @@ export function activate(context: vscode.ExtensionContext): void {
       if (!out) return;
       await vscode.workspace.fs.writeFile(out, Buffer.from(text, 'utf8'));
       vscode.window.showInformationMessage(`Netlist written to ${out.fsPath}`);
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('altium.exportNetlistAccel', async (uri?: vscode.Uri) => {
+      const u = await resolveSchDocUri(uri);
+      if (!u) {
+        vscode.window.showWarningMessage('No SchDoc selected.');
+        return;
+      }
+      const buf = await vscode.workspace.fs.readFile(u);
+      const model = parseSchDocBuffer(new Uint8Array(buf));
+      const nets = buildNetlist(model);
+      const text = netlistToAccelAscii(model.components, nets, {
+        documentPath: u.fsPath,
+        documentName: u.path.split('/').pop() ?? u.fsPath,
+      });
+      const base = u.fsPath.replace(/\.(SchDoc|SchDot)$/i, '') + '.NET';
+      const out = await vscode.window.showSaveDialog({
+        defaultUri: vscode.Uri.file(base),
+        filters: { 'Altium netlist': ['NET', 'net'] },
+        saveLabel: 'Export ACCEL ASCII netlist',
+      });
+      if (!out) return;
+      await vscode.workspace.fs.writeFile(out, Buffer.from(text, 'utf8'));
+      vscode.window.showInformationMessage(`ACCEL ASCII netlist written to ${out.fsPath}`);
     })
   );
 

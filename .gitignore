@@ -17,3 +17,7 @@ Direct-Export_*/
 test/fixtures/**/*.SchDoc
 test/fixtures/**/*.SchDot
 test/fixtures/**/*.PrjPcb
+
+# Exported netlists: Altium .NET files carry customer connectivity.
+*.NET
+*.net

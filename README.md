@@ -99,6 +99,7 @@ When a `.SchDoc` / `.SchDot` is active (or pick a file when prompted):
 |--------|-------------|
 | **Altium: Export BOM as CSV (grouped)** | Grouped by value/footprint with `Qty` and compressed designator ranges (`R1-R4, R7`), plus Manufacturer/MPN columns. |
 | **Altium: Export Netlist (Protel)** | Real Protel format — component sections then net sections. |
+| **Altium: Export Netlist (ACCEL ASCII .NET)** | Altium's `ACCEL_ASCII` netlist: `globalAttrs` block, one `compInst` per component with its parameters as attributes, then one `net` block per net with a `node` per pin. Same-named nets are merged and every pin is written once. |
 | **Altium: Export JSON Model** | Versioned JSON snapshot of the full parsed schematic, for downstream tooling or LLM ingestion. |
 | **Altium: Reveal Raw Records** | Plain-text dump of record payloads. |
 
